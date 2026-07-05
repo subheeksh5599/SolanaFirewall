@@ -30,9 +30,9 @@ export function Header() {
           ))}
         </nav>
         <div className="ml-auto hidden md:block anim-pop" style={{ animationDelay: "900ms" }}>
-          <button className="bg-white text-black rounded-lg py-[11px] px-[20px] text-[15px] font-medium hover:bg-neutral-200 transition-colors">
+          <a href="/app" className="bg-white text-black rounded-lg py-[11px] px-[20px] text-[15px] font-medium hover:bg-neutral-200 transition-colors no-underline">
             Launch App
-          </button>
+          </a>
         </div>
         <button
           aria-label="Open menu"
@@ -70,9 +70,9 @@ export function Header() {
               </a>
             ))}
           </nav>
-          <button className="mt-auto bg-white text-black rounded-lg py-4 text-base font-medium">
+          <a href="/app" className="mt-auto bg-white text-black rounded-lg py-4 text-base font-medium no-underline text-center">
             Launch App
-          </button>
+          </a>
         </div>
       )}
     </>
