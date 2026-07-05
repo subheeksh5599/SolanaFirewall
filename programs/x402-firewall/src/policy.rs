@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-
 use crate::errors::FirewallError;
 use crate::state::{DailyTracker, FirewallState, RecipientState, SenderRecipientPair, SenderState};
 
@@ -9,6 +8,30 @@ pub struct PolicyResult {
 }
 
 pub fn evaluate(
+    firewall: &FirewallState,
+    sender_state: Option<SenderState>,
+    recipient_state: Option<RecipientState>,
+    pair: Option<SenderRecipientPair>,
+    daily: &DailyTracker,
+    amount: u64,
+    current_time: i64,
+) -> Result<PolicyResult> {
+    evaluate_inner(firewall, sender_state.as_ref(), recipient_state.as_ref(), pair.as_ref(), daily, amount, current_time)
+}
+
+pub fn evaluate_ref(
+    firewall: &FirewallState,
+    sender_state: Option<&SenderState>,
+    recipient_state: Option<&RecipientState>,
+    pair: Option<&SenderRecipientPair>,
+    daily: &DailyTracker,
+    amount: u64,
+    current_time: i64,
+) -> Result<PolicyResult> {
+    evaluate_inner(firewall, sender_state, recipient_state, pair, daily, amount, current_time)
+}
+
+fn evaluate_inner(
     firewall: &FirewallState,
     sender_state: Option<&SenderState>,
     recipient_state: Option<&RecipientState>,

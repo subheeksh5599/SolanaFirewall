@@ -10,7 +10,32 @@ use errors::*;
 use events::*;
 use state::*;
 
-declare_id!("AqUjqw2rxopqpdT3SFY5TV1EabcCErypkAeDCcWopwrc");
+fn try_deser<T: AccountDeserialize>(ai: &AccountInfo) -> Option<T> {
+    ai.try_borrow_data().ok()
+        .and_then(|d| T::try_deserialize(&mut &d[..]).ok())
+}
+
+fn try_deser_daily(ai: &AccountInfo, current_time: i64) -> DailyTracker {
+    match try_deser::<DailyTracker>(ai) {
+        Some(mut d) => {
+            let seconds_in_day: i64 = 86400;
+            if current_time >= d.day_start + seconds_in_day {
+                d.day_start = current_time;
+                d.total_spent = 0;
+            }
+            d
+        }
+        None => DailyTracker { sender: Pubkey::default(), day_start: current_time, total_spent: 0, bump: 0 },
+    }
+}
+
+fn write_daily(daily_info: &AccountInfo, daily: &DailyTracker) -> Result<()> {
+    let mut data = daily_info.try_borrow_mut_data()?;
+    let mut buf: &mut [u8] = &mut data;
+    daily.try_serialize(&mut buf).map_err(|_| error!(FirewallError::ArithmeticOverflow))
+}
+
+declare_id!("56hwxWZ1K1K6wCqGozkF1VTmUxSiWD1DYxm54F9U57EA");
 
 // ─── Initialize ─────────────────────────────────────
 
@@ -35,60 +60,20 @@ pub struct Initialize<'info> {
 
 #[derive(Accounts)]
 pub struct ExecutePayment<'info> {
-    #[account(
-        mut,
-        seeds = [FirewallState::SEEDS],
-        bump = firewall_state.bump,
-    )]
+    #[account(mut, seeds = [FirewallState::SEEDS], bump = firewall_state.bump)]
     pub firewall_state: Account<'info, FirewallState>,
-
     #[account(mut)]
     pub sender: Signer<'info>,
-
-    #[account(mut)]
     /// CHECK: recipient validated by policy
     pub recipient: AccountInfo<'info>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = SenderState::space(),
-        seeds = [SenderState::SEEDS, sender.key().as_ref()],
-        bump
-    )]
-    pub sender_state: Option<Account<'info, SenderState>>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = RecipientState::space(),
-        seeds = [RecipientState::SEEDS, recipient.key().as_ref()],
-        bump
-    )]
-    pub recipient_state: Option<Account<'info, RecipientState>>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = SenderRecipientPair::space(),
-        seeds = [
-            SenderRecipientPair::SEEDS,
-            sender.key().as_ref(),
-            recipient.key().as_ref()
-        ],
-        bump
-    )]
-    pub sender_recipient_pair: Option<Account<'info, SenderRecipientPair>>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = DailyTracker::space(),
-        seeds = [DailyTracker::SEEDS, sender.key().as_ref()],
-        bump
-    )]
-    pub daily_tracker: Account<'info, DailyTracker>,
-
+    /// CHECK: optional sender state PDA
+    pub sender_state: Option<UncheckedAccount<'info>>,
+    /// CHECK: optional recipient state PDA
+    pub recipient_state: Option<UncheckedAccount<'info>>,
+    /// CHECK: optional pair PDA
+    pub sender_recipient_pair: Option<UncheckedAccount<'info>>,
+    /// CHECK: daily tracker PDA
+    pub daily_tracker: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -96,68 +81,26 @@ pub struct ExecutePayment<'info> {
 
 #[derive(Accounts)]
 pub struct ExecuteTokenPayment<'info> {
-    #[account(
-        mut,
-        seeds = [FirewallState::SEEDS],
-        bump = firewall_state.bump,
-    )]
+    #[account(mut, seeds = [FirewallState::SEEDS], bump = firewall_state.bump)]
     pub firewall_state: Account<'info, FirewallState>,
-
     #[account(mut)]
     pub sender: Signer<'info>,
-
     /// CHECK: recipient validated by policy
     pub recipient: AccountInfo<'info>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = SenderState::space(),
-        seeds = [SenderState::SEEDS, sender.key().as_ref()],
-        bump
-    )]
-    pub sender_state: Option<Account<'info, SenderState>>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = RecipientState::space(),
-        seeds = [RecipientState::SEEDS, recipient.key().as_ref()],
-        bump
-    )]
-    pub recipient_state: Option<Account<'info, RecipientState>>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = SenderRecipientPair::space(),
-        seeds = [
-            SenderRecipientPair::SEEDS,
-            sender.key().as_ref(),
-            recipient.key().as_ref()
-        ],
-        bump
-    )]
-    pub sender_recipient_pair: Option<Account<'info, SenderRecipientPair>>,
-
-    #[account(
-        init_if_needed,
-        payer = sender,
-        space = DailyTracker::space(),
-        seeds = [DailyTracker::SEEDS, sender.key().as_ref()],
-        bump
-    )]
-    pub daily_tracker: Account<'info, DailyTracker>,
-
+    /// CHECK: optional sender state PDA
+    pub sender_state: Option<UncheckedAccount<'info>>,
+    /// CHECK: optional recipient state PDA
+    pub recipient_state: Option<UncheckedAccount<'info>>,
+    /// CHECK: optional pair PDA
+    pub sender_recipient_pair: Option<UncheckedAccount<'info>>,
+    /// CHECK: daily tracker PDA
+    pub daily_tracker: UncheckedAccount<'info>,
     #[account(mut)]
     pub sender_token_account: Account<'info, TokenAccount>,
-
     #[account(mut)]
     /// CHECK: validated by token program
     pub recipient_token_account: AccountInfo<'info>,
-
     pub token_program: Program<'info, Token>,
-
     pub system_program: Program<'info, System>,
 }
 
@@ -177,9 +120,9 @@ pub struct SimulatePayment<'info> {
     /// CHECK: simulation recipient
     pub recipient: AccountInfo<'info>,
 
-    pub sender_state: Option<Account<'info, SenderState>>,
-    pub recipient_state: Option<Account<'info, RecipientState>>,
-    pub sender_recipient_pair: Option<Account<'info, SenderRecipientPair>>,
+    pub sender_state: Option<Box<Account<'info, SenderState>>>,
+    pub recipient_state: Option<Box<Account<'info, RecipientState>>>,
+    pub sender_recipient_pair: Option<Box<Account<'info, SenderRecipientPair>>>,
     pub daily_tracker: Option<Account<'info, DailyTracker>>,
 }
 
@@ -310,63 +253,22 @@ pub struct CancelIntent<'info> {
 
 #[derive(Accounts)]
 pub struct ExecuteIntent<'info> {
-    #[account(
-        mut,
-        seeds = [FirewallState::SEEDS],
-        bump = firewall_state.bump,
-    )]
+    #[account(mut, seeds = [FirewallState::SEEDS], bump = firewall_state.bump)]
     pub firewall_state: Account<'info, FirewallState>,
-
     #[account(mut)]
     pub payment_intent: Account<'info, PaymentIntent>,
-
     #[account(mut)]
     pub executor: Signer<'info>,
-
     /// CHECK: recipient from intent
-    #[account(mut)]
     pub recipient: AccountInfo<'info>,
-
-    #[account(
-        init_if_needed,
-        payer = executor,
-        space = SenderState::space(),
-        seeds = [SenderState::SEEDS, executor.key().as_ref()],
-        bump
-    )]
-    pub sender_state: Option<Account<'info, SenderState>>,
-
-    #[account(
-        init_if_needed,
-        payer = executor,
-        space = RecipientState::space(),
-        seeds = [RecipientState::SEEDS, recipient.key().as_ref()],
-        bump
-    )]
-    pub recipient_state: Option<Account<'info, RecipientState>>,
-
-    #[account(
-        init_if_needed,
-        payer = executor,
-        space = SenderRecipientPair::space(),
-        seeds = [
-            SenderRecipientPair::SEEDS,
-            executor.key().as_ref(),
-            recipient.key().as_ref()
-        ],
-        bump
-    )]
-    pub sender_recipient_pair: Option<Account<'info, SenderRecipientPair>>,
-
-    #[account(
-        init_if_needed,
-        payer = executor,
-        space = DailyTracker::space(),
-        seeds = [DailyTracker::SEEDS, executor.key().as_ref()],
-        bump
-    )]
-    pub daily_tracker: Account<'info, DailyTracker>,
-
+    /// CHECK: optional sender state PDA
+    pub sender_state: Option<UncheckedAccount<'info>>,
+    /// CHECK: optional recipient state PDA
+    pub recipient_state: Option<UncheckedAccount<'info>>,
+    /// CHECK: optional pair PDA
+    pub sender_recipient_pair: Option<UncheckedAccount<'info>>,
+    /// CHECK: daily tracker PDA
+    pub daily_tracker: UncheckedAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -600,16 +502,17 @@ pub mod x402_firewall {
         let recipient = &ctx.accounts.recipient;
         let clock = Clock::get()?;
 
-        let sender_state = ctx.accounts.sender_state.as_ref().map(|a| &**a);
-        let recipient_state = ctx.accounts.recipient_state.as_ref().map(|a| &**a);
-        let pair = ctx.accounts.sender_recipient_pair.as_ref().map(|a| &**a);
+        let sender_state = ctx.accounts.sender_state.as_ref().and_then(|a| try_deser::<SenderState>(a));
+        let recipient_state = ctx.accounts.recipient_state.as_ref().and_then(|a| try_deser::<RecipientState>(a));
+        let pair = ctx.accounts.sender_recipient_pair.as_ref().and_then(|a| try_deser::<SenderRecipientPair>(a));
+        let mut daily = try_deser_daily(&ctx.accounts.daily_tracker, clock.unix_timestamp);
 
         let result = policy::evaluate(
             firewall,
             sender_state,
             recipient_state,
             pair,
-            &ctx.accounts.daily_tracker,
+            &daily,
             amount,
             clock.unix_timestamp,
         )?;
@@ -617,6 +520,8 @@ pub mod x402_firewall {
         if !result.allowed {
             let fw = &mut ctx.accounts.firewall_state;
             fw.total_blocked = fw.total_blocked.checked_add(1).ok_or(FirewallError::ArithmeticOverflow)?;
+
+            write_daily(&ctx.accounts.daily_tracker, &daily)?;
 
             emit!(PaymentBlocked {
                 sender: sender.key(),
@@ -633,24 +538,15 @@ pub mod x402_firewall {
             return Err(FirewallError::InsufficientLamports.into());
         }
 
-        // Update daily tracker
-        let daily = &mut ctx.accounts.daily_tracker;
-        daily.sender = sender.key();
-        let seconds_in_day: i64 = 86400;
-        if clock.unix_timestamp >= daily.day_start + seconds_in_day {
-            daily.day_start = clock.unix_timestamp;
-            daily.total_spent = 0;
-        }
         daily.total_spent = daily.total_spent.checked_add(amount).ok_or(FirewallError::ArithmeticOverflow)?;
-        daily.bump = ctx.bumps.daily_tracker;
+        daily.sender = sender.key();
+        write_daily(&ctx.accounts.daily_tracker, &daily)?;
 
-        // Update global counters
         let fw = &mut ctx.accounts.firewall_state;
         fw.total_payments = fw.total_payments.checked_add(1).ok_or(FirewallError::ArithmeticOverflow)?;
         fw.total_volume = fw.total_volume.checked_add(amount).ok_or(FirewallError::ArithmeticOverflow)?;
         fw.last_payment_time = clock.unix_timestamp as u64;
 
-        // CPI: transfer SOL
         anchor_lang::system_program::transfer(
             CpiContext::new(
                 ctx.accounts.system_program.to_account_info(),
@@ -683,74 +579,40 @@ pub mod x402_firewall {
         let clock = Clock::get()?;
         let token_mint = ctx.accounts.sender_token_account.mint;
 
-        let sender_state = ctx.accounts.sender_state.as_ref().map(|a| &**a);
-        let recipient_state = ctx.accounts.recipient_state.as_ref().map(|a| &**a);
-        let pair = ctx.accounts.sender_recipient_pair.as_ref().map(|a| &**a);
+        let sender_state = ctx.accounts.sender_state.as_ref().and_then(|a| try_deser::<SenderState>(a));
+        let recipient_state = ctx.accounts.recipient_state.as_ref().and_then(|a| try_deser::<RecipientState>(a));
+        let pair = ctx.accounts.sender_recipient_pair.as_ref().and_then(|a| try_deser::<SenderRecipientPair>(a));
+        let mut daily = try_deser_daily(&ctx.accounts.daily_tracker, clock.unix_timestamp);
 
-        let result = policy::evaluate(
-            firewall,
-            sender_state,
-            recipient_state,
-            pair,
-            &ctx.accounts.daily_tracker,
-            amount,
-            clock.unix_timestamp,
-        )?;
+        let result = policy::evaluate(firewall, sender_state, recipient_state, pair, &daily, amount, clock.unix_timestamp)?;
 
         if !result.allowed {
             let fw = &mut ctx.accounts.firewall_state;
             fw.total_blocked = fw.total_blocked.checked_add(1).ok_or(FirewallError::ArithmeticOverflow)?;
-
-            emit!(PaymentBlocked {
-                sender: sender.key(),
-                recipient: recipient.key(),
-                token_mint: Some(token_mint),
-                amount,
-                reason: result.reason.clone(),
-            });
-
+            write_daily(&ctx.accounts.daily_tracker, &daily)?;
+            emit!(PaymentBlocked { sender: sender.key(), recipient: recipient.key(), token_mint: Some(token_mint), amount, reason: result.reason.clone() });
             return Err(FirewallError::ExceedsMaxPayment.into());
         }
 
-        // Update daily tracker
-        let daily = &mut ctx.accounts.daily_tracker;
-        daily.sender = sender.key();
-        let seconds_in_day: i64 = 86400;
-        if clock.unix_timestamp >= daily.day_start + seconds_in_day {
-            daily.day_start = clock.unix_timestamp;
-            daily.total_spent = 0;
-        }
         daily.total_spent = daily.total_spent.checked_add(amount).ok_or(FirewallError::ArithmeticOverflow)?;
-        daily.bump = ctx.bumps.daily_tracker;
+        daily.sender = sender.key();
+        write_daily(&ctx.accounts.daily_tracker, &daily)?;
 
-        // Update global counters
         let fw = &mut ctx.accounts.firewall_state;
         fw.total_payments = fw.total_payments.checked_add(1).ok_or(FirewallError::ArithmeticOverflow)?;
         fw.total_volume = fw.total_volume.checked_add(amount).ok_or(FirewallError::ArithmeticOverflow)?;
         fw.last_payment_time = clock.unix_timestamp as u64;
 
-        // CPI: transfer SPL tokens
         anchor_spl::token::transfer(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                anchor_spl::token::Transfer {
-                    from: ctx.accounts.sender_token_account.to_account_info(),
-                    to: ctx.accounts.recipient_token_account.to_account_info(),
-                    authority: sender.to_account_info(),
-                },
-            ),
+            CpiContext::new(ctx.accounts.token_program.to_account_info(), anchor_spl::token::Transfer {
+                from: ctx.accounts.sender_token_account.to_account_info(),
+                to: ctx.accounts.recipient_token_account.to_account_info(),
+                authority: sender.to_account_info(),
+            }),
             amount,
         )?;
 
-        emit!(PaymentExecuted {
-            sender: sender.key(),
-            recipient: recipient.key(),
-            token_mint: Some(token_mint),
-            amount,
-            intent_hash: None,
-            timestamp: clock.unix_timestamp,
-        });
-
+        emit!(PaymentExecuted { sender: sender.key(), recipient: recipient.key(), token_mint: Some(token_mint), amount, intent_hash: None, timestamp: clock.unix_timestamp });
         Ok(())
     }
 
@@ -759,28 +621,15 @@ pub mod x402_firewall {
     pub fn simulate_payment(ctx: Context<SimulatePayment>, amount: u64) -> Result<(bool, String)> {
         let firewall = &ctx.accounts.firewall_state;
         let clock = Clock::get()?;
-
-        let default_daily = DailyTracker::default();
-        let daily_opt = ctx.accounts.daily_tracker.as_ref();
-        let daily = match daily_opt {
-            Some(d) => &**d,
-            None => &default_daily,
-        };
-
-        let sender_state = ctx.accounts.sender_state.as_ref().map(|a| &**a);
-        let recipient_state = ctx.accounts.recipient_state.as_ref().map(|a| &**a);
-        let pair = ctx.accounts.sender_recipient_pair.as_ref().map(|a| &**a);
-
-        let result = policy::evaluate(
-            firewall,
-            sender_state,
-            recipient_state,
-            pair,
-            daily,
-            amount,
-            clock.unix_timestamp,
-        )?;
-
+        let mut default_daily = DailyTracker::default();
+        default_daily.day_start = clock.unix_timestamp;
+        let daily_ref: &DailyTracker = ctx.accounts.daily_tracker.as_ref()
+            .map(|d| d.as_ref())
+            .unwrap_or(&default_daily);
+        let sender_ref: Option<&SenderState> = ctx.accounts.sender_state.as_ref().map(|b| &***b);
+        let recipient_ref: Option<&RecipientState> = ctx.accounts.recipient_state.as_ref().map(|b| &***b);
+        let pair_ref: Option<&SenderRecipientPair> = ctx.accounts.sender_recipient_pair.as_ref().map(|b| &***b);
+        let result = policy::evaluate_ref(firewall, sender_ref, recipient_ref, pair_ref, daily_ref, amount, clock.unix_timestamp)?;
         Ok((result.allowed, result.reason))
     }
 
@@ -907,88 +756,41 @@ pub mod x402_firewall {
         require!(clock.unix_timestamp <= intent.expiry, FirewallError::IntentExpired);
 
         let firewall = &ctx.accounts.firewall_state;
+        let sender_state = ctx.accounts.sender_state.as_ref().and_then(|a| try_deser::<SenderState>(a));
+        let recipient_state = ctx.accounts.recipient_state.as_ref().and_then(|a| try_deser::<RecipientState>(a));
+        let pair = ctx.accounts.sender_recipient_pair.as_ref().and_then(|a| try_deser::<SenderRecipientPair>(a));
+        let mut daily = try_deser_daily(&ctx.accounts.daily_tracker, clock.unix_timestamp);
 
-        let sender_state = ctx.accounts.sender_state.as_ref().map(|a| &**a);
-        let recipient_state = ctx.accounts.recipient_state.as_ref().map(|a| &**a);
-        let pair = ctx.accounts.sender_recipient_pair.as_ref().map(|a| &**a);
-
-        let result = policy::evaluate(
-            firewall,
-            sender_state,
-            recipient_state,
-            pair,
-            &ctx.accounts.daily_tracker,
-            intent.amount,
-            clock.unix_timestamp,
-        )?;
+        let result = policy::evaluate(firewall, sender_state, recipient_state, pair, &daily, intent.amount, clock.unix_timestamp)?;
 
         if !result.allowed {
             let fw = &mut ctx.accounts.firewall_state;
             fw.total_blocked = fw.total_blocked.checked_add(1).ok_or(FirewallError::ArithmeticOverflow)?;
-
-            emit!(PaymentBlocked {
-                sender: intent.creator,
-                recipient: intent.recipient,
-                token_mint: intent.token_mint,
-                amount: intent.amount,
-                reason: result.reason.clone(),
-            });
-
+            write_daily(&ctx.accounts.daily_tracker, &daily)?;
+            emit!(PaymentBlocked { sender: intent.creator, recipient: intent.recipient, token_mint: intent.token_mint, amount: intent.amount, reason: result.reason.clone() });
             return Err(FirewallError::ExceedsMaxPayment.into());
         }
 
-        // Transfer SOL (native) or log for token
         if intent.token_mint.is_none() {
             let from = ctx.accounts.executor.to_account_info();
             let to = ctx.accounts.recipient.to_account_info();
-
-            **from.try_borrow_mut_lamports()? = from
-                .lamports()
-                .checked_sub(intent.amount)
-                .ok_or(FirewallError::InsufficientLamports)?;
-
-            **to.try_borrow_mut_lamports()? = to
-                .lamports()
-                .checked_add(intent.amount)
-                .ok_or(FirewallError::ArithmeticOverflow)?;
+            **from.try_borrow_mut_lamports()? = from.lamports().checked_sub(intent.amount).ok_or(FirewallError::InsufficientLamports)?;
+            **to.try_borrow_mut_lamports()? = to.lamports().checked_add(intent.amount).ok_or(FirewallError::ArithmeticOverflow)?;
         }
 
-        // Update daily tracker
-        let daily = &mut ctx.accounts.daily_tracker;
-        daily.sender = intent.creator;
-        let seconds_in_day: i64 = 86400;
-        if clock.unix_timestamp >= daily.day_start + seconds_in_day {
-            daily.day_start = clock.unix_timestamp;
-            daily.total_spent = 0;
-        }
         daily.total_spent = daily.total_spent.checked_add(intent.amount).ok_or(FirewallError::ArithmeticOverflow)?;
-        daily.bump = ctx.bumps.daily_tracker;
+        daily.sender = intent.creator;
+        write_daily(&ctx.accounts.daily_tracker, &daily)?;
 
         intent.status = IntentStatus::Executed;
-
         let fw = &mut ctx.accounts.firewall_state;
         fw.total_executed = fw.total_executed.checked_add(1).ok_or(FirewallError::ArithmeticOverflow)?;
         fw.total_payments = fw.total_payments.checked_add(1).ok_or(FirewallError::ArithmeticOverflow)?;
         fw.total_volume = fw.total_volume.checked_add(intent.amount).ok_or(FirewallError::ArithmeticOverflow)?;
         fw.last_payment_time = clock.unix_timestamp as u64;
 
-        emit!(IntentExecuted {
-            intent: intent.key(),
-            creator: intent.creator,
-            recipient: intent.recipient,
-            amount: intent.amount,
-            timestamp: clock.unix_timestamp,
-        });
-
-        emit!(PaymentExecuted {
-            sender: intent.creator,
-            recipient: intent.recipient,
-            token_mint: intent.token_mint,
-            amount: intent.amount,
-            intent_hash: Some(intent.key().to_bytes()),
-            timestamp: clock.unix_timestamp,
-        });
-
+        emit!(IntentExecuted { intent: intent.key(), creator: intent.creator, recipient: intent.recipient, amount: intent.amount, timestamp: clock.unix_timestamp });
+        emit!(PaymentExecuted { sender: intent.creator, recipient: intent.recipient, token_mint: intent.token_mint, amount: intent.amount, intent_hash: Some(intent.key().to_bytes()), timestamp: clock.unix_timestamp });
         Ok(())
     }
 

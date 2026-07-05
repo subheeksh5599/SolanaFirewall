@@ -3,10 +3,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-x402_firewall = "AqUjqw2rxopqpdT3SFY5TV1EabcCErypkAeDCcWopwrc"
+x402_firewall = "56hwxWZ1K1K6wCqGozkF1VTmUxSiWD1DYxm54F9U57EA"
 
 [programs.devnet]
-x402_firewall = "AqUjqw2rxopqpdT3SFY5TV1EabcCErypkAeDCcWopwrc"
+x402_firewall = "56hwxWZ1K1K6wCqGozkF1VTmUxSiWD1DYxm54F9U57EA"
 
 [registry]
 url = "https://api.apr.dev"
