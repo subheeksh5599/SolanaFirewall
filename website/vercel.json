@@ -1,1 +1,4 @@
-{"name": "solanafirewall"}
+{
+  "name": "solanafirewall",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
