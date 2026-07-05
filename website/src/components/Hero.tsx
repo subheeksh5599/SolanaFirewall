@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "./Header";
 import { assets, icons } from "./assets";
-import { StaggeredWords, ToolIcon, CountUpInView, CountNumber, WordsReveal, TypingInput } from "./shared";
+import { StaggeredWords, CountUpInView, CountNumber, WordsReveal, TypingInput } from "./shared";
 
 export function Hero() {
   const [heroReady, setHeroReady] = useState(false);
@@ -22,22 +22,13 @@ export function Hero() {
             <div className="flex-1 flex items-center">
               <img src={icons.macDot} alt="" width={60} height={12} />
             </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <ToolIcon src={icons.type} className="anim-rise" style={{ animationDelay: "1140ms" }} />
-              <ToolIcon src={icons.imagePlus} className="anim-rise" style={{ animationDelay: "1200ms" }} />
-              <ToolIcon src={icons.mousePointer} className="anim-rise" style={{ animationDelay: "1260ms" }} />
-              <ToolIcon src={icons.square} className="anim-rise" style={{ animationDelay: "1320ms" }} />
-              <ToolIcon src={icons.plus} className="anim-rise" style={{ animationDelay: "1380ms" }} />
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-emerald-400 bg-emerald-400/10 rounded-full px-3 py-1 anim-rise" style={{ animationDelay: "1140ms" }}>● Active</span>
+              <span className="text-xs text-neutral-400 bg-white/5 rounded-full px-3 py-1 anim-rise" style={{ animationDelay: "1200ms" }}>Devnet</span>
+              <span className="text-xs text-neutral-400 bg-white/5 rounded-full px-3 py-1 anim-rise" style={{ animationDelay: "1260ms" }}>v0.1.0</span>
+              <span className="text-xs text-neutral-400 bg-white/5 rounded-full px-3 py-1 anim-rise" style={{ animationDelay: "1320ms" }}>56hwxWZ...</span>
             </div>
-            <div className="flex-1 flex items-center justify-end gap-4">
-              <button className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-[10px] px-4 py-1.5 transition-colors anim-pop" style={{ animationDelay: "1440ms" }}>
-                Deploy
-              </button>
-              <div className="flex items-center space-x-[-10px]">
-                <img src={icons.sr} alt="" width={36} height={36} className="relative z-0 outline outline-2 outline-stone-950 rounded-full anim-pop" style={{ animationDelay: "1500ms" }} />
-                <img src={icons.nm} alt="" width={36} height={36} className="relative z-10 outline outline-2 outline-stone-950 rounded-full anim-pop" style={{ animationDelay: "1560ms" }} />
-              </div>
-            </div>
+            <div className="flex-1" />
           </div>
 
           {/* Hero content */}

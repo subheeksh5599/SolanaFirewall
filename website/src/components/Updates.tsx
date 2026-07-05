@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { assets, icons } from "./assets";
+import { icons } from "./assets";
 import { WordsReveal } from "./shared";
 
 export function Updates() {
@@ -39,19 +39,7 @@ export function Updates() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-16 relative">
-          <motion.div
-            className="w-full lg:w-[35%] shrink-0"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-          >
-            <div className="rounded-3xl overflow-hidden bg-neutral-900">
-              <img src={assets.card} alt="" className="w-full h-auto block" />
-            </div>
-          </motion.div>
-
-          <div className="w-full lg:w-[65%] flex flex-col relative pb-20">
+          <div className="w-full flex flex-col relative pb-20">
             <div className="flex justify-between items-center mb-6">
               <WordsReveal as="h3" className="text-4xl text-neutral-100 block" text="Latest Release" step={0.1} duration={0.6} />
               <img src={icons.whiteArrowUpRight} alt="" width={28} height={28} />

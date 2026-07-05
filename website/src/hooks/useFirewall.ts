@@ -110,8 +110,7 @@ export function useFirewall() {
     if (!publicKey || !signTransaction) throw new Error("Connect wallet first");
     setLoading(true);
     try {
-      const { createHash } = await import("crypto");
-      const hash = createHash("sha256").update("global:initialize").digest().slice(0, 8);
+      const hash = Buffer.from([175, 175, 109, 31, 13, 152, 155, 237]);
       const ix = new TransactionInstruction({
         keys: [
           { pubkey: firewallPda, isSigner: false, isWritable: true },
@@ -119,7 +118,7 @@ export function useFirewall() {
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
         programId: PROGRAM_ID,
-        data: Buffer.from(hash),
+        data: hash,
       });
       const { Transaction } = await import("@solana/web3.js");
       const tx = new Transaction().add(ix);
@@ -141,8 +140,7 @@ export function useFirewall() {
     if (!publicKey || !signTransaction) throw new Error("Connect wallet first");
     setLoading(true);
     try {
-      const { createHash } = await import("crypto");
-      const hash = createHash("sha256").update("global:execute_payment").digest().slice(0, 8);
+      const hash2 = Buffer.from([86, 4, 7, 7, 120, 139, 232, 139]);
       const amountLamports = BigInt(Math.floor(amountSol * LAMPORTS_PER_SOL));
       const amountBuf = Buffer.alloc(8);
       amountBuf.writeBigUInt64LE(amountLamports);
@@ -166,7 +164,7 @@ export function useFirewall() {
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         ],
         programId: PROGRAM_ID,
-        data: Buffer.concat([Buffer.from(hash), amountBuf]),
+        data: Buffer.concat([hash2, amountBuf]),
       });
       const { Transaction } = await import("@solana/web3.js");
       const tx = new Transaction().add(ix);
@@ -192,8 +190,7 @@ export function useFirewall() {
 
   const simulate = useCallback(async (recipient: string, amountSol: number) => {
     try {
-      const { createHash } = await import("crypto");
-      const hash = createHash("sha256").update("global:simulate_payment").digest().slice(0, 8);
+      const hash3 = Buffer.from([100, 75, 221, 72, 168, 78, 8, 20]);
       const amountLamports = BigInt(Math.floor(amountSol * LAMPORTS_PER_SOL));
       const amountBuf = Buffer.alloc(8);
       amountBuf.writeBigUInt64LE(amountLamports);
@@ -214,7 +211,7 @@ export function useFirewall() {
       ];
 
       const { TransactionInstruction } = await import("@solana/web3.js");
-      const ix = new TransactionInstruction({ keys: accounts, programId: PROGRAM_ID, data: Buffer.concat([Buffer.from(hash), amountBuf]) });
+      const ix = new TransactionInstruction({ keys: accounts, programId: PROGRAM_ID, data: Buffer.concat([hash3, amountBuf]) });
       const { Transaction } = await import("@solana/web3.js");
 
       // Simulation via simulated transaction

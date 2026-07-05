@@ -9,4 +9,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  define: {
+    global: "globalThis",
+    "process.env.NODE_ENV": JSON.stringify("production"),
+  },
+  optimizeDeps: {
+    include: ["buffer"],
+  },
 });
