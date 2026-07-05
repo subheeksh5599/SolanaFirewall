@@ -1,0 +1,19 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+x402_firewall = "AqUjqw2rxopqpdT3SFY5TV1EabcCErypkAeDCcWopwrc"
+
+[programs.devnet]
+x402_firewall = "AqUjqw2rxopqpdT3SFY5TV1EabcCErypkAeDCcWopwrc"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
