@@ -1,4 +1,3 @@
 {
-  "name": "solanafirewall",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
