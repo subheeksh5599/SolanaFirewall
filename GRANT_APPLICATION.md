@@ -51,5 +51,5 @@ This whole project was built with AI coding tools ($200 grant would cover Cursor
 ### Proof of Execution
 - GitHub: https://github.com/subheeksh5599/SolanaFirewall (40+ commits, clean history)
 - Devnet TX: 2LVzqkyartuNS3KcFH93ekdySooLZXZ27sBBSbDnQd1evMrp8yhxvHgmGsb9pU6R82mCqVba4JyVQYNo5CiyT1s
-- npm SDK: @venkat5599/x402-solana-firewall
+- npm SDK: @subheeksh5599/solanafirewall
 - Winner: Cronos x402 Hackathon 2025 (original concept, now ported to Solana)
