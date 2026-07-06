@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>x402 Payment Firewall — Superteam Agentic Engineering Grant</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; color: #1a1a1a; max-width: 800px; margin: 0 auto; padding: 40px 20px; line-height: 1.7; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 32px; }
+  h2 { font-size: 18px; font-weight: 700; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #1a1a1a; }
+  p, li { font-size: 14px; color: #333; margin-bottom: 10px; }
+  ul { padding-left: 20px; }
+  .tag { display: inline-block; background: #f0f0f0; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin: 2px; }
+  .highlight { background: #FFF3CD; padding: 16px 20px; border-radius: 8px; border-left: 4px solid #FFC107; margin: 16px 0; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .link { color: #2563EB; text-decoration: none; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  td { padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+  td:first-child { font-weight: 600; width: 180px; color: #555; }
+  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #ddd; color: #999; font-size: 12px; }
+  @media print { body { padding: 0; } }
+</style>
+</head>
+<body>
+
+<h1>x402 Payment Firewall</h1>
+<p class="subtitle">Superteam Agentic Engineering Grant Application &nbsp;|&nbsp; Response from solana.new session</p>
+
+<h2>One-Line Summary</h2>
+<p>On-chain payment firewall that stops compromised AI agents from draining Solana wallets.</p>
+
+<h2>What I Built</h2>
+<p>I've been building an AI agent that manages a Solana wallet — paying for API calls, subscriptions, on-chain services. Then it hit me: if someone prompt-injects this agent or steals its private key, there's zero protection. The entire wallet gets drained in one transaction. No enterprise would deploy this.</p>
+<p>So I built a payment firewall as an Anchor program on Solana. Every agent payment goes through policy checks enforced at the blockchain level:</p>
+<ul>
+  <li><strong>Max per-transaction caps:</strong> agent can't spend more than X SOL in one shot</li>
+  <li><strong>Daily spending limits:</strong> caps total outflow per wallet per day</li>
+  <li><strong>Sender/recipient blocklists:</strong> ban specific addresses</li>
+  <li><strong>Rate limiting:</strong> minimum interval between payments</li>
+  <li><strong>Intent-based approval:</strong> agent proposes a payment, authorized approver reviews risk score, then executes through the firewall — like 2FA for autonomous spending</li>
+  <li><strong>Emergency pause:</strong> instant global freeze</li>
+  <li><strong>Full audit trail</strong> via Anchor events</li>
+</ul>
+
+<div class="highlight">
+<strong>Key insight:</strong> If any policy check fails, the Solana runtime itself reverts the transaction. No funds move. No trusted third party. No off-chain validation that can be bypassed.
+</div>
+
+<h2>Live Demos</h2>
+<table>
+<tr><td>Website</td><td><a href="https://solanafirewall.vercel.app" class="link">solanafirewall.vercel.app</a></td></tr>
+<tr><td>Interactive App</td><td><a href="https://solanafirewall.vercel.app/app" class="link">solanafirewall.vercel.app/app</a> — connect Phantom on devnet, try sending 15,000 SOL → gets blocked</td></tr>
+<tr><td>Deployed Program</td><td><code>56hwxWZ1K1K6wCqGozkF1VTmUxSiWD1DYxm54F9U57EA</code> on Solana devnet</td></tr>
+</table>
+
+<h2>Technical Details</h2>
+<p>
+  <span class="tag">25 instructions</span>
+  <span class="tag">7 account types</span>
+  <span class="tag">10 policy checks</span>
+  <span class="tag">19 error codes</span>
+  <span class="tag">SOL + SPL</span>
+  <span class="tag">17 test cases</span>
+</p>
+
+<h2>How I Used AI Tools</h2>
+<table>
+<tr><td>Cursor</td><td>Wrote Anchor program structure, generated instruction handlers, fixed BPF stack overflow errors</td></tr>
+<tr><td>Claude Code</td><td>PDA layout design, policy engine, landing page port, error handling</td></tr>
+<tr><td>Vercel</td><td>Deployed React + Vite frontend at solanafirewall.vercel.app</td></tr>
+</table>
+
+<h2>What I'd Build Next</h2>
+<ul>
+  <li>Autonomous agent demo script — headless intent flow with risk scoring</li>
+  <li>AI-powered risk evaluation engine for intent approval</li>
+  <li>Mainnet deployment with security audit</li>
+  <li>Integration with Solana agent frameworks</li>
+</ul>
+
+<h2>Proof of Execution</h2>
+<table>
+<tr><td>GitHub</td><td><a href="https://github.com/subheeksh5599/SolanaFirewall" class="link">github.com/subheeksh5599/SolanaFirewall</a></td></tr>
+<tr><td>Devnet TX</td><td>2LVzqkyartuNS3KcFH93ekdySooLZXZ27sBBSbDnQd1evMrp8yhxvHgmGsb9pU6R82mCqVba4JyVQYNo5CiyT1s</td></tr>
+<tr><td>npm SDK</td><td><code>@venkat5599/x402-solana-firewall</code></td></tr>
+</table>
+
+<div class="footer">
+Generated from solana.new Claude/Codex session &nbsp;|&nbsp; x402 Payment Firewall &nbsp;|&nbsp; Superteam Agentic Engineering Grants 2025
+</div>
+
+</body>
+</html>
